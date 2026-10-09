@@ -157,6 +157,10 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
 .sumtab td{font-family:var(--f-display);font-variant-numeric:tabular-nums}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-family:var(--f-display);font-weight:700;z-index:60;max-width:calc(100% - 32px)}
 
+/* ---------- organiser footer ---------- */
+.org{text-align:center;padding-block:22px 6px;border-top:1px solid var(--line);margin-top:8px;font-family:var(--f-display);line-height:1.45;color:var(--ink)}
+.org b{display:block;font-size:22px;color:var(--brand)}
+.org span{display:block;font-weight:700;font-size:17px}
 /* ---------- score card ---------- */
 .card-wrap{display:grid;gap:14px;justify-items:center;text-align:center}
 .card-wrap img{width:100%;max-width:420px;border-radius:14px;box-shadow:0 10px 30px rgba(8,16,32,.25);background:var(--brand)}
@@ -261,6 +265,7 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
       <p class="note">परिणाम केवल इसी ब्राउज़र में सहेजे जाते हैं। सभी विद्यार्थियों का साझा Top-10 लीडरबोर्ड बनाने के लिए साझा डेटाबेस जोड़ना होगा।</p>
     </div>
   </div>
+  <footer class="org"><b>धन्यवाद!</b><span>संचालक मंडल</span><span>हल्बा समाज कर्मचारी प्रकोष्ठ गोटाटोला</span></footer>
 </section>
 
 <!-- ============ EXAM ============ -->
@@ -701,7 +706,8 @@ function renderResult(R,fresh){
 
   h+=`<div class="panel"><h2>उत्तर एवं व्याख्या</h2><div class="chips" id="rvf">
    <button class="chip" aria-pressed="true" data-f="all">सभी 80</button><button class="chip" aria-pressed="false" data-f="w">गलत (${sm.wrong})</button><button class="chip" aria-pressed="false" data-f="u">छोड़े (${80-sm.att})</button><button class="chip" aria-pressed="false" data-f="c">सही (${sm.correct})</button></div><div id="rvList" style="display:grid;gap:16px"></div></div>
-   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn pri" id="again">नया प्रयास शुरू करें</button></div>`;
+   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn pri" id="again">नया प्रयास शुरू करें</button></div>
+   <footer class="org"><b>धन्यवाद!</b><span>संचालक मंडल</span><span>हल्बा समाज कर्मचारी प्रकोष्ठ गोटाटोला</span></footer>`;
   $('#res').innerHTML=h;show('res');
   fillCard($('#cardPanel'),R);
   if(fresh){$('#cmBody').innerHTML='<p class="note">स्कोर कार्ड बन रहा है…</p>';$('#cardModal').hidden=false;fillCard($('#cmBody'),R);$('#cmClose').focus()}
