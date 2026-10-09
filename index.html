@@ -457,8 +457,13 @@ async function flushQueue(){
   const q=getQ();if(!q.length)return 'sent';
   const left=[];
   for(const row of q){
-    try{const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(row)});const j=await r.json();if(!j.ok)throw new Error(j.error||'')}
-    catch(e){left.push(row)}
+    const body=JSON.stringify(row);
+    try{const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow'});const j=await r.json();if(!j.ok)throw new Error(j.error||'')}
+    catch(e){
+      /* ब्राउज़र जवाब न पढ़ पाए (CORS) तो बिना जवाब पढ़े भेजें; Sheet में ID से दोहराव रुकता है */
+      try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body})}
+      catch(e2){left.push(row)}
+    }
   }
   setQ(left);return left.length?'pending':'sent';
 }
