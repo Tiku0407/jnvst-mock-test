@@ -240,8 +240,9 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
     <div class="sheet">
       <form id="regForm" novalidate>
         <div class="cover-head"><span class="label">विद्यार्थी पंजीकरण</span><h2>परीक्षा शुरू करने से पहले विवरण भरें</h2></div>
-        <div class="field"><label for="sname">विद्यार्थी का नाम</label><input id="sname" autocomplete="name" maxlength="60" placeholder="जैसे: अनन्या साहू"></div>
-        <div class="field"><label for="sroll">अनुक्रमांक (Roll Number)</label><input id="sroll" inputmode="numeric" maxlength="12" placeholder="केवल अंक, 4 से 12"></div>
+        <div class="field"><label for="sname">विद्यार्थी का नाम <span style="color:var(--bad)">*</span></label><input id="sname" autocomplete="name" maxlength="60" required aria-required="true" placeholder="जैसे: अनन्या साहू"></div>
+        <div class="field"><label for="sroll">मोबाइल नंबर <span style="color:var(--bad)">*</span></label><input id="sroll" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" required aria-required="true" pattern="[6-9][0-9]{9}" placeholder="10 अंकों का मोबाइल नंबर"></div>
+        <p class="note" style="margin:0"><span style="color:var(--bad)">*</span> दोनों जानकारी भरना अनिवार्य है।</p>
         <div class="err" id="regErr" role="alert"></div>
         <button class="btn pri" type="submit" id="startBtn">परीक्षा शुरू करें (Start Test)</button>
         <button class="btn ghost" type="button" id="lastBtn" hidden>पिछला परिणाम देखें</button>
@@ -431,6 +432,8 @@ const Q=[
 const KEY=atob('Q0FEQkNEQkFDQkFEQUJDQUJDQkNCQ0RDQUJEQkNCQ0JDREJDQUNCQ0JBREJDQ0FEQkNBRENCQUJEQUNCQURDQkNCREFDQUJDQURDQkNDQkM=').split('').reverse().join('');
 
 /* ======================= APP ======================= */
+/* Google Sheet से जोड़ने के लिए: Apps Script Web App का URL यहाँ लिखें (खाली छोड़ने पर परिणाम केवल इसी ब्राउज़र में रहेंगे) */
+const SHEET_URL='';
 const SEC=[{id:'mat',name:'मानसिक योग्यता',from:0,to:19},{id:'evs',name:'पर्यावरण अध्ययन',from:20,to:39},{id:'ari',name:'अंकगणित',from:40,to:59},{id:'lan',name:'भाषा',from:60,to:79}];
 const L='ABCD', DUR=120*60*1000, LIVE='jnvst_s01_live', HIST='jnvst_s01_hist', LAST='jnvst_s01_last';
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
@@ -439,7 +442,34 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const secOf=i=>SEC.find(s=>i>=s.from&&i<=s.to);
 const fmt=ms=>{const t=Math.max(0,Math.round(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0')};
 const fmtLong=ms=>{const t=Math.round(ms/1000),m=Math.floor(t/60),s=t%60;return `${m} मि ${s} से`};
-let S=null,tick=null;
+let S=null,tick=null,MEMQ=[];
+const QUEUE='jnvst_s01_queue';
+const getQ=()=>store.get(QUEUE)||MEMQ, setQ=q=>{MEMQ=q;store.set(QUEUE,q)};
+function buildRow(R){
+  const sm=summary(R.ans);
+  const sec=SEC.map(s=>{let c=0;for(let i=s.from;i<=s.to;i++){if(R.ans[i]>=0&&L[R.ans[i]]===KEY[i])c++}return c*1.25});
+  const qual=(sec[0]+sec[1]>=14&&sec[2]>=7&&sec[3]>=7)?'उत्तीर्ण':'न्यूनतम अंक से कम';
+  return {id:R.id,ts:R.ts,name:R.name,mobile:R.roll,set:R.set,score:sm.score,pct:sm.score,correct:sm.correct,wrong:sm.wrong,skipped:80-sm.att,acc:+sm.acc.toFixed(1),minutes:+(R.taken/60000).toFixed(1),mat:sec[0],evs:sec[1],ari:sec[2],lan:sec[3],qual,auto:!!R.auto,
+    answers:R.ans.map((a,i)=>a<0?'—':L[a]+(L[a]===KEY[i]?' ✓':' ✗'))};
+}
+async function flushQueue(){
+  if(!SHEET_URL)return 'off';
+  const q=getQ();if(!q.length)return 'sent';
+  const left=[];
+  for(const row of q){
+    try{const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(row)});const j=await r.json();if(!j.ok)throw new Error(j.error||'')}
+    catch(e){left.push(row)}
+  }
+  setQ(left);return left.length?'pending':'sent';
+}
+async function showSync(){
+  const el=$('#syncStatus');if(!el)return;
+  if(!SHEET_URL){el.hidden=true;return}
+  el.hidden=false;el.className='pill';el.textContent='Google Sheet में भेजा जा रहा है…';
+  const st=await flushQueue();
+  if(st==='sent'){el.className='pill ok';el.textContent='परिणाम Google Sheet में दर्ज हो गया'}
+  else{el.className='pill bad';el.innerHTML='Google Sheet में नहीं भेजा जा सका। इंटरनेट जाँचकर <button class="btn" id="syncRetry" style="padding:2px 10px;font-size:13px">फिर भेजें</button>';$('#syncRetry').onclick=showSync}
+}
 function show(id){['reg','exam','res'].forEach(x=>$('#'+x).hidden=x!==id);window.scrollTo(0,0)}
 function save(){store.set(LIVE,S)}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,4500)}
@@ -455,12 +485,13 @@ function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTi
 
 /* registration */
 if(store.get(LAST))$('#lastBtn').hidden=false;
-$('#lastBtn').onclick=()=>renderResult(store.get(LAST));
+$('#lastBtn').onclick=()=>{renderResult(store.get(LAST));showSync()};
 $('#regForm').addEventListener('submit',e=>{
   e.preventDefault();
-  const name=$('#sname').value.trim(),roll=$('#sroll').value.trim();
-  if(name.length<2){$('#regErr').textContent='कृपया विद्यार्थी का पूरा नाम लिखें।';$('#sname').focus();return}
-  if(!/^\d{4,12}$/.test(roll)){$('#regErr').textContent='अनुक्रमांक में केवल अंक हों (4 से 12 अंक)।';$('#sroll').focus();return}
+  const name=$('#sname').value.trim(),roll=$('#sroll').value.replace(/\D/g,'').replace(/^(91|0)(?=\d{10}$)/,'');
+  if(name.length<2){$('#regErr').textContent='विद्यार्थी का नाम भरना अनिवार्य है।';$('#sname').focus();return}
+  if(!roll){$('#regErr').textContent='मोबाइल नंबर भरना अनिवार्य है।';$('#sroll').focus();return}
+  if(!/^[6-9]\d{9}$/.test(roll)){$('#regErr').textContent='मान्य 10 अंकों का मोबाइल नंबर लिखें (6, 7, 8 या 9 से शुरू)।';$('#sroll').focus();return}
   $('#regErr').textContent='';
   const now=Date.now();
   S={name,roll,set:'SET 01',start:now,end:now+DUR,ans:Array(80).fill(-1),mark:Array(80).fill(false),visit:Array(80).fill(false),tq:Array(80).fill(0),cur:0,bells:0,lastT:now};
@@ -470,7 +501,7 @@ $('#regForm').addEventListener('submit',e=>{
 function enterExam(){
   show('exam');
   $('#tbName').textContent=S.name;
-  $('#tbRoll').textContent=`अनुक्रमांक ${S.roll} · ${S.set}`;
+  $('#tbRoll').textContent=`मोबाइल ${S.roll} · ${S.set}`;
   S.lastT=Date.now();
   renderAll();clearInterval(tick);tick=setInterval(onTick,500);onTick();
 }
@@ -536,10 +567,11 @@ $('#mYes').onclick=()=>{$('#modal').hidden=true;finish(false)};
 function finish(auto){
   clearInterval(tick);logTime();$('#modal').hidden=true;
   const end=Math.min(Date.now(),S.end);
-  const R={name:S.name,roll:S.roll,set:S.set,ans:S.ans.slice(),tq:S.tq.slice(),taken:end-S.start,auto,ts:end};
+  const R={id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),name:S.name,roll:S.roll,set:S.set,ans:S.ans.slice(),tq:S.tq.slice(),taken:end-S.start,auto,ts:end};
   const hist=store.get(HIST)||[];hist.push({name:R.name,roll:R.roll,set:R.set,...summary(R.ans),taken:R.taken,ts:R.ts});store.set(HIST,hist.slice(-200));
   store.set(LAST,R);store.del(LIVE);S=null;
-  renderResult(R);
+  if(SHEET_URL)setQ(getQ().concat([buildRow(R)]));
+  renderResult(R);showSync();
 }
 function summary(ans){let c=0,w=0;ans.forEach((a,i)=>{if(a<0)return;if(L[a]===KEY[i])c++;else w++});const att=c+w;return {correct:c,wrong:w,att,score:c*1.25,acc:att?c/att*100:0}}
 function rankSort(a,b){return b.score-a.score||b.acc-a.acc||a.taken-b.taken}
@@ -563,8 +595,8 @@ function renderResult(R){
   const me=sec[0].t+sec[1].t;
 
   let h=`<div class="res-head"><div><span class="label">परिणाम · ${esc(R.set)}${R.auto?' · समय समाप्त होने पर स्वतः जमा':''}</span><h1>परीक्षा परिणाम</h1></div>
-  <div class="idgrid"><span class="label">विद्यार्थी</span><span class="label">अनुक्रमांक</span><span class="label">टेस्ट सेट</span><b>${esc(R.name)}</b><b class="num">${esc(R.roll)}</b><b>${esc(R.set)}</b></div></div>
-  <div class="score-band"><div class="big"><span class="label" style="color:inherit;opacity:.8">प्राप्तांक</span><span class="s">${sm.score.toFixed(2).replace(/\.00$/,'')}<small> / 100</small></span><span class="cls">${cls}</span><span>${allQ?'सभी खंडों में न्यूनतम योग्यता अंक प्राप्त':'किसी खंड में न्यूनतम योग्यता अंक से कम'}</span></div>
+  <div class="idgrid"><span class="label">विद्यार्थी</span><span class="label">मोबाइल नंबर</span><span class="label">टेस्ट सेट</span><b>${esc(R.name)}</b><b class="num">${esc(R.roll)}</b><b>${esc(R.set)}</b></div></div>
+  <div class="score-band"><div class="big"><span class="label" style="color:inherit;opacity:.8">प्राप्तांक</span><span class="s">${sm.score.toFixed(2).replace(/\.00$/,'')}<small> / 100</small></span><span class="cls">${cls}</span><span>${allQ?'सभी खंडों में न्यूनतम योग्यता अंक प्राप्त':'किसी खंड में न्यूनतम योग्यता अंक से कम'}</span><span id="syncStatus" hidden></span></div>
   <div class="kpis">
    <div><span class="label">कुल प्रश्न</span><b>80</b></div><div><span class="label">प्रयास किए</span><b>${sm.att}</b></div>
    <div class="okc"><span class="label">सही</span><b>${sm.correct}</b></div><div class="badc"><span class="label">गलत</span><b>${sm.wrong}</b></div>
@@ -582,7 +614,7 @@ function renderResult(R){
    <p><b>कमज़ोर विषय:</b> ${strong.m===weak.m?'सभी विषयों में अंक बराबर':weak.name+' ('+weak.m+'/25)'}</p>
    <p><b>सटीकता:</b> ${sm.att?`जितने प्रश्न किए, उनमें ${sm.acc.toFixed(0)}% सही। `:''}${sm.acc>=85?'अनुमान कम, समझ अच्छी है।':sm.acc>=60?'कुछ उत्तर जल्दबाज़ी में गलत हुए; विकल्प मिलाकर जाँचें।':'अनुमान से उत्तर देने की बजाय अवधारणा दोहराएँ।'}</p>
    <p><b>समय प्रबंधन:</b> प्रति प्रयास किए प्रश्न औसतन ${Math.round(avgT/1000)} सेकंड (परीक्षा का औसत 90 सेकंड)। मानसिक योग्यता + EVS पर ${fmtLong(me)} (सुझाव 60 मिनट)। ${timeLine.split(' · ').slice(2).join(' · ')} (सुझाव 30-30 मिनट)।</p>
-   <p><b>पिछले प्रयास से तुलना:</b> ${prev?`इसी डिवाइस पर पिछला प्रयास ${prev.score} अंक; अब ${sm.score} (${sm.score-prev.score>=0?'+':''}${(sm.score-prev.score).toFixed(2).replace(/\.00$/,'')})।`:'इस अनुक्रमांक का यह पहला दर्ज प्रयास है।'}</p>
+   <p><b>पिछले प्रयास से तुलना:</b> ${prev?`इसी डिवाइस पर पिछला प्रयास ${prev.score} अंक; अब ${sm.score} (${sm.score-prev.score>=0?'+':''}${(sm.score-prev.score).toFixed(2).replace(/\.00$/,'')})।`:'इस मोबाइल नंबर से यह पहला दर्ज प्रयास है।'}</p>
    <p><b>अगला लक्ष्य:</b> ${Math.min(100,Math.ceil((sm.score+10)/1.25)*1.25)} अंक और ${Math.min(100,Math.round(sm.acc+5))}% सटीकता; सभी 80 प्रश्नों का प्रयास करें (कोई ऋणात्मक अंक नहीं है)।</p></div>
    <div class="panel"><h2>दोहराने योग्य विषय</h2>${Object.keys(topics).length?Object.entries(topics).map(([s,set])=>`<div><span class="label">${s}</span><div class="chips" style="margin-top:6px">${[...set].map(t=>`<span class="chip">${t}</span>`).join('')}</div></div>`).join(''):'<p>सभी उत्तर सही हैं।</p>'}</div></div>`;
 
@@ -612,6 +644,7 @@ function renderResult(R){
 }
 
 /* resume */
+if(SHEET_URL)flushQueue();
 (function(){const live=store.get(LIVE);if(live&&live.ans&&live.end){S=live;if(S.end<=Date.now()){S.lastT=Date.now();finish(true)}else enterExam()}})();
 </script>
 </body>
