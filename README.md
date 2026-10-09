@@ -20,6 +20,6 @@
 1. Sheet **JNVST Mock Test परिणाम** खोलें → Extensions → Apps Script।
 2. `apps-script.gs` का पूरा कोड चिपकाकर Save करें।
 3. Deploy → New deployment → प्रकार **Web app** → Execute as: **Me**, Who has access: **Anyone** → Deploy, और अनुमति दें।
-4. मिला हुआ Web app URL (`https://script.google.com/macros/s/.../exec`) `index.html` में `const SHEET_URL='';` के बीच लिखें।
+4. (जुड़ चुका है) मिला हुआ Web app URL (`https://script.google.com/macros/s/.../exec`) `index.html` में `const SHEET_URL='';` के बीच लिखें।
 5. हर जमा टेस्ट की एक पंक्ति Sheet में जुड़ेगी: नाम, मोबाइल, अंक, विषयवार अंक और हर प्रश्न का उत्तर (✓ सही / ✗ गलत / — छोड़ा)।
    इंटरनेट न होने पर परिणाम फ़ोन में रखा जाता है और अगली बार पेज खुलने पर भेजा जाता है।
