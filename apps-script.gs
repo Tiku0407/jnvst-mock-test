@@ -9,6 +9,7 @@ const TRY_COL = 99;  // कॉलम CU: इस मोबाइल से इस
 const KIND_COL = 100; // कॉलम CV: रैंकिंग प्रकार (प्रतियोगी / अभ्यास)
 const LIVE_COL = 101; // कॉलम CW: सेट की लाइव तारीख
 const TZ = 'Asia/Kolkata';
+const MIN_PRAC = 30;  // अभ्यास लीडरबोर्ड में केवल वही प्रयास जिनमें कम से कम इतने मिनट लगे (उत्तर याद करके जल्दी जमा करने वाले प्रयास नहीं गिने जाते)
 const COMP_DAYS = 1;  // सेट लाइव होने से इतने दिन के भीतर का पहला प्रयास ही प्रतियोगी (रोज़ नया सेट = उसी दिन)
 
 /*
@@ -16,7 +17,7 @@ const COMP_DAYS = 1;  // सेट लाइव होने से इतने
  * 1. प्रतियोगी परीक्षा लीडरबोर्ड: हर मोबाइल नंबर का हर सेट पर केवल पहला जमा प्रयास,
  *    और वह भी सेट लाइव होने वाले दिन ही (अगला सेट आने से पहले)। बाद के प्रयास इसमें नहीं गिने जाते।
  *    अवधि में एक से अधिक सेट हों तो उन पहले प्रयासों का औसत अंक।
- * 2. अभ्यास लीडरबोर्ड: सभी प्रयास गिने जाते हैं; अवधि में विद्यार्थी का सर्वश्रेष्ठ अंक।
+ * 2. अभ्यास लीडरबोर्ड: कम से कम 30 मिनट वाले सभी प्रयास गिने जाते हैं; अवधि में विद्यार्थी का सर्वश्रेष्ठ अंक।
  * दोनों में बराबरी होने पर: अधिक सटीकता, फिर कम समय, फिर पहले जमा।
  */
 
@@ -51,7 +52,8 @@ function doPost(e) {
       cd.forEach(r => { if (String(r[0]).replace(/\D/g, '') === mobile && String(r[1]) === String(d.set)) tries++; });
     }
     const live = /^\d{4}-\d{2}-\d{2}$/.test(String(d.live || '')) ? String(d.live) : '';
-    const kind = (tries === 1 && inWindow(new Date(d.ts), live)) ? 'प्रतियोगी' : 'अभ्यास';
+    const kind = (tries === 1 && inWindow(new Date(d.ts), live)) ? 'प्रतियोगी'
+      : (num(d.minutes) >= MIN_PRAC ? 'अभ्यास' : 'अभ्यास (30 मिनट से कम, लीडरबोर्ड में नहीं)');
 
     const row = [
       new Date(d.ts),
@@ -134,6 +136,7 @@ function board(rows, from, competitive) {
   rows.forEach(r => {
     if (r.day < from) return;
     if (competitive && !r.comp) return;
+    if (!competitive && !(r.min >= MIN_PRAC)) return;
     (by[r.mobile] = by[r.mobile] || []).push(r);
   });
   const list = Object.keys(by).map(m => {
