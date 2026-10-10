@@ -202,6 +202,15 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{border:1.5px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--surface);font:700 14px/1.6 var(--f-display)}
 .chip[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.lb-wrap{margin-top:20px}
+.lb-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.lb-tabs .tab{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font:700 15px/1.3 var(--f-display);text-align:left}
+.lb-tabs .tab small{display:block;font-weight:500;font-size:12.5px;color:var(--muted)}
+.lb-tabs .tab[aria-selected="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.lb-rule{font-size:15px;background:var(--brand-soft);border-radius:8px;padding:10px 12px;margin:0}
+.lb-me{margin:0;font-family:var(--f-display)}
+.stbl tr.me td{background:var(--brand-soft)}
+.stbl td.nm{text-align:left;font-family:var(--f-body)}
 .rv{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:10px}
 .rv .h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .rv ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -264,9 +273,10 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
         <table id="qrTable"></table>
         <p class="note">पिछले 10 वर्षों (2017–2026) के मूल JNVST प्रश्नपत्र इस प्रोजेक्ट में उपलब्ध नहीं हैं, इसलिए उनसे मिलान नहीं किया गया है। सभी प्रश्न नए लिखे गए हैं, पर "पिछले वर्षों से पूर्णतः भिन्न" होने का सत्यापन तभी संभव है जब वे प्रश्नपत्र जोड़े जाएँ।</p>
       </details>
-      <p class="note">परिणाम केवल इसी ब्राउज़र में सहेजे जाते हैं। सभी विद्यार्थियों का साझा Top-10 लीडरबोर्ड बनाने के लिए साझा डेटाबेस जोड़ना होगा।</p>
+      <p class="note">हर सेट का <b>पहला प्रयास</b> (सेट लाइव होने के 2 दिन के भीतर) <b>प्रतियोगी लीडरबोर्ड</b> में गिना जाता है। उसके बाद के सभी प्रयास <b>अभ्यास लीडरबोर्ड</b> में जाते हैं, ताकि दोबारा अभ्यास करने वालों को भी पहचान मिले।</p>
     </div>
   </div>
+  <div class="panel lb-wrap" id="lbReg"></div>
   <footer class="org"><b>धन्यवाद!</b><span>संचालक मंडल</span><span>हल्बा समाज कर्मचारी प्रकोष्ठ गोटाटोला</span></footer>
 </section>
 
@@ -357,13 +367,13 @@ const secOf=i=>SEC.find(s=>i>=s.from&&i<=s.to);
 const fmt=ms=>{const t=Math.max(0,Math.round(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0')};
 const fmtLong=ms=>{const t=Math.round(ms/1000),m=Math.floor(t/60),s=t%60;return `${m} मि ${s} से`};
 let S=null,tick=null,MEMQ=[];
-const QUEUE='jnvst_queue';
+const QUEUE='jnvst_queue', KINDS='jnvst_kinds';
 const getQ=()=>store.get(QUEUE)||MEMQ, setQ=q=>{MEMQ=q;store.set(QUEUE,q)};
 function buildRow(R){
   const sm=summary(R.ans);
   const sec=SEC.map(s=>{let c=0;for(let i=s.from;i<=s.to;i++){if(R.ans[i]>=0&&L[R.ans[i]]===KEY[i])c++}return c*1.25});
   const qual=(sec[0]+sec[1]>=14&&sec[2]>=7&&sec[3]>=7)?'उत्तीर्ण':'न्यूनतम अंक से कम';
-  return {id:R.id,ts:R.ts,name:R.name,mobile:R.roll,set:R.set,score:sm.score,pct:sm.score,correct:sm.correct,wrong:sm.wrong,skipped:80-sm.att,acc:+sm.acc.toFixed(1),minutes:+(R.taken/60000).toFixed(1),mat:sec[0],evs:sec[1],ari:sec[2],lan:sec[3],qual,auto:!!R.auto,
+  return {id:R.id,ts:R.ts,name:R.name,mobile:R.roll,set:R.set,live:R.live||SETD.live||'',score:sm.score,pct:sm.score,correct:sm.correct,wrong:sm.wrong,skipped:80-sm.att,acc:+sm.acc.toFixed(1),minutes:+(R.taken/60000).toFixed(1),mat:sec[0],evs:sec[1],ari:sec[2],lan:sec[3],qual,auto:!!R.auto,
     answers:R.ans.map((a,i)=>a<0?'—':L[a]+(L[a]===KEY[i]?' ✓':' ✗'))};
 }
 async function flushQueue(){
@@ -372,7 +382,8 @@ async function flushQueue(){
   const left=[];
   for(const row of q){
     const body=JSON.stringify(row);
-    try{const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow'});const j=await r.json();if(!j.ok)throw new Error(j.error||'')}
+    try{const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow'});const j=await r.json();if(!j.ok)throw new Error(j.error||'');
+      if(j.kind){const k=store.get(KINDS)||{};k[row.id]={attempt:j.attempt,kind:j.kind};store.set(KINDS,k)}}
     catch(e){
       /* ब्राउज़र जवाब न पढ़ पाए (CORS) तो बिना जवाब पढ़े भेजें; Sheet में ID से दोहराव रुकता है */
       try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body})}
@@ -386,7 +397,10 @@ async function showSync(){
   if(!SHEET_URL){el.hidden=true;return}
   el.hidden=false;el.className='pill';el.textContent='Google Sheet में भेजा जा रहा है…';
   const st=await flushQueue();
-  if(st==='sent'){el.className='pill ok';el.textContent='परिणाम Google Sheet में दर्ज हो गया'}
+  if(st==='sent'){el.className='pill ok';el.textContent='परिणाम Google Sheet में दर्ज हो गया';
+    const R=store.get(LAST),k=R&&(store.get(KINDS)||{})[R.id];
+    if(k)el.textContent+=k.kind==='प्रतियोगी'?' · पहला प्रयास: प्रतियोगी लीडरबोर्ड में गिना गया':` · प्रयास ${k.attempt}: अभ्यास लीडरबोर्ड में गिना गया`;
+    if($('#lbRes'))renderLB($('#lbRes'),R&&R.roll)}
   else{el.className='pill bad';el.innerHTML='Google Sheet में नहीं भेजा जा सका। इंटरनेट जाँचकर <button class="btn" id="syncRetry" style="padding:2px 10px;font-size:13px">फिर भेजें</button>';$('#syncRetry').onclick=showSync}
 }
 function show(id){['reg','exam','res'].forEach(x=>$('#'+x).hidden=x!==id);window.scrollTo(0,0)}
@@ -419,6 +433,9 @@ $('#regForm').addEventListener('submit',e=>{
   $('#regErr').textContent='';
   const now=Date.now();
   try{localStorage.setItem('jnvst_active',JNVST_PICK.file.replace('.js',''))}catch(e){}
+  const tried=(store.get(HIST)||[]).some(h=>h.roll===roll&&h.set===SETID);
+  const today=new Date(now+5.5*3600e3).toISOString().slice(0,10),lastDay=SETD.live?new Date(Date.parse(SETD.live)+86400e3).toISOString().slice(0,10):today;
+  if(tried||today>lastDay)setTimeout(()=>toast(tried?'इस सेट का यह आपका दोबारा प्रयास है: यह अभ्यास लीडरबोर्ड में गिना जाएगा।':'इस सेट की प्रतियोगी अवधि समाप्त हो चुकी है: यह प्रयास अभ्यास लीडरबोर्ड में गिना जाएगा।'),400);
   S={name,roll,set:SETID,start:now,end:now+DUR,ans:Array(80).fill(-1),mark:Array(80).fill(false),visit:Array(80).fill(false),tq:Array(80).fill(0),cur:0,bells:0,lastT:now};
   save();enterExam();
 });
@@ -493,7 +510,7 @@ $('#mYes').onclick=()=>{$('#modal').hidden=true;finish(false)};
 function finish(auto){
   clearInterval(tick);logTime();$('#modal').hidden=true;
   const end=Math.min(Date.now(),S.end);
-  const R={id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),name:S.name,roll:S.roll,set:S.set,ans:S.ans.slice(),tq:S.tq.slice(),taken:end-S.start,auto,ts:end};
+  const R={id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),name:S.name,roll:S.roll,set:S.set,ans:S.ans.slice(),tq:S.tq.slice(),taken:end-S.start,auto,ts:end,live:SETD.live||''};
   const hist=store.get(HIST)||[];hist.push({name:R.name,roll:R.roll,set:R.set,...summary(R.ans),taken:R.taken,ts:R.ts});store.set(HIST,hist.slice(-200));
   store.set(LAST,R);store.del(LIVE);S=null;try{localStorage.removeItem('jnvst_active')}catch(e){}
   if(SHEET_URL)setQ(getQ().concat([buildRow(R)]));
@@ -566,8 +583,6 @@ function renderResult(R,fresh){
   const qual=[{n:'मानसिक योग्यता + EVS',m:matEvs,min:14,of:50},{n:'अंकगणित',m:sec[2].m,min:7,of:25},{n:'भाषा',m:sec[3].m,min:7,of:25}];
   const allQ=qual.every(x=>x.m>=x.min);
   const cls=pct>=85?'उत्कृष्ट':pct>=70?'बहुत अच्छा':pct>=50?'अच्छा':pct>=35?'औसत: सुधार आवश्यक':'कमज़ोर: नियमित अभ्यास आवश्यक';
-  const hist=(store.get(HIST)||[]).filter(h=>h.set===R.set).sort(rankSort);
-  const myRank=hist.findIndex(h=>h.ts===R.ts&&h.roll===R.roll)+1;
   const prev=(store.get(HIST)||[]).filter(h=>h.roll===R.roll&&h.ts<R.ts).sort((a,b)=>b.ts-a.ts)[0];
   const bySec=[...sec].sort((a,b)=>b.m-a.m);
   const strong=bySec[0],weak=bySec[bySec.length-1];
@@ -602,18 +617,14 @@ function renderResult(R,fresh){
    <p><b>अगला लक्ष्य:</b> ${Math.min(100,Math.ceil((sm.score+10)/1.25)*1.25)} अंक और ${Math.min(100,Math.round(sm.acc+5))}% सटीकता; सभी 80 प्रश्नों का प्रयास करें (कोई ऋणात्मक अंक नहीं है)।</p></div>
    <div class="panel"><h2>दोहराने योग्य विषय</h2>${Object.keys(topics).length?Object.entries(topics).map(([s,set])=>`<div><span class="label">${s}</span><div class="chips" style="margin-top:6px">${[...set].map(t=>`<span class="chip">${t}</span>`).join('')}</div></div>`).join(''):'<p>सभी उत्तर सही हैं।</p>'}</div></div>`;
 
-  h+=`<div class="panel"><h2>रैंक · इस डिवाइस पर ${esc(R.set)} के प्रयास</h2>
-   <p class="note" style="margin:0">रैंक का क्रम: अधिक अंक, फिर अधिक सटीकता, फिर कम समय। यह सूची केवल इसी ब्राउज़र में दिए गए वास्तविक प्रयासों से बनी है; सभी विद्यार्थियों का Daily/Weekly/Monthly Top-10 साझा डेटाबेस जुड़ने पर बनेगा।</p>
-   <p style="margin:0"><b>आपकी रैंक:</b> <span class="num">${myRank} / ${hist.length}</span></p>
-   <div class="tbl-wrap"><table class="stbl"><tr><th>रैंक</th><th>नाम</th><th>अंक</th><th>सटीकता</th><th>समय</th><th>सेट</th></tr>
-   ${hist.slice(0,10).map((x,k)=>`<tr${x.ts===R.ts?' style="background:var(--brand-soft)"':''}><td>${k+1}</td><td style="text-align:left;font-family:var(--f-body)">${esc(x.name)}</td><td>${x.score}</td><td>${x.acc.toFixed(1)}%</td><td>${fmt(x.taken)}</td><td>${esc(x.set)}</td></tr>`).join('')}</table></div></div>`;
+  h+=`<div class="panel lb-wrap" id="lbRes"></div>`;
 
   h+=`<div class="panel"><h2>उत्तर एवं व्याख्या</h2><div class="chips" id="rvf">
    <button class="chip" aria-pressed="true" data-f="all">सभी 80</button><button class="chip" aria-pressed="false" data-f="w">गलत (${sm.wrong})</button><button class="chip" aria-pressed="false" data-f="u">छोड़े (${80-sm.att})</button><button class="chip" aria-pressed="false" data-f="c">सही (${sm.correct})</button></div><div id="rvList" style="display:grid;gap:16px"></div></div>
    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn pri" id="again">नया प्रयास शुरू करें</button></div>
    <footer class="org"><b>धन्यवाद!</b><span>संचालक मंडल</span><span>हल्बा समाज कर्मचारी प्रकोष्ठ गोटाटोला</span></footer>`;
   $('#res').innerHTML=h;show('res');
-  fillCard($('#cardPanel'),R);
+  fillCard($('#cardPanel'),R);renderLB($('#lbRes'),R.roll);
   if(fresh){$('#cmBody').innerHTML='<p class="note">स्कोर कार्ड बन रहा है…</p>';$('#cardModal').hidden=false;fillCard($('#cmBody'),R);$('#cmClose').focus()}
 
   const list=f=>{let out='',lastP=null;Q.forEach((q,i)=>{
@@ -629,6 +640,47 @@ function renderResult(R,fresh){
   $('#rvf').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#rvf').querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===b));list(b.dataset.f)});
   $('#again').onclick=()=>{$('#lastBtn').hidden=false;$('#sname').value=R.name;$('#sroll').value=R.roll;show('reg')};
 }
+
+/* ======================= लीडरबोर्ड (दो अलग रैंकिंग) ======================= */
+const LBT={comp:{n:'प्रतियोगी परीक्षा लीडरबोर्ड',s:'केवल पहला प्रयास',rule:'हर विद्यार्थी का हर सेट पर केवल <b>पहला प्रयास</b> गिना जाता है, और वह भी सेट लाइव होने के <b>2 दिन के भीतर</b> (अगला सेट आने से पहले)। दोबारा दिए गए प्रयास यहाँ नहीं जुड़ते। अवधि में एक से अधिक सेट हों तो उनके पहले प्रयासों का <b>औसत</b> अंक।'},
+  prac:{n:'अभ्यास लीडरबोर्ड',s:'सभी प्रयास',rule:'हर प्रयास गिना जाता है, किसी भी सेट का, कभी भी। अवधि में आपका <b>सर्वश्रेष्ठ</b> अंक रैंक तय करता है। बार-बार अभ्यास करके सुधार करें: "सुधार" पहले से सर्वश्रेष्ठ प्रयास तक की बढ़त है।'}};
+const LBP={day:'आज',week:'इस सप्ताह',month:'इस माह'};
+const LBV={b:'comp',p:'day'};
+const ddmm=d=>d?d.split('-').reverse().join('-'):'';
+async function renderLB(el,me){
+  if(!el)return;
+  el.innerHTML=`<h2>लीडरबोर्ड · Top 10</h2><p class="note" style="margin:0">लीडरबोर्ड लोड हो रहा है…</p>`;
+  let D=null;
+  if(SHEET_URL){try{const r=await fetch(SHEET_URL+'?lb=1'+(me?'&me='+encodeURIComponent(me):''),{redirect:'follow'});const j=await r.json();if(j&&j.ok&&j.comp)D=j}catch(e){}}
+  const draw=()=>{
+    const b=LBV.b,p=LBV.p;
+    let h=`<h2>लीडरबोर्ड · Top 10</h2>
+     <div class="lb-tabs" role="tablist">${Object.keys(LBT).map(k=>`<button class="tab" role="tab" aria-selected="${k===b}" data-b="${k}">${LBT[k].n}<small>${LBT[k].s}</small></button>`).join('')}</div>
+     <div class="chips">${Object.keys(LBP).map(k=>`<button class="chip" aria-pressed="${k===p}" data-p="${k}">${LBP[k]}</button>`).join('')}</div>
+     <p class="lb-rule">${LBT[b].rule} बराबरी पर: अधिक सटीकता, फिर कम समय, फिर पहले जमा।</p>`;
+    if(!D){
+      h+=`<p class="note" style="margin:0">साझा लीडरबोर्ड अभी उपलब्ध नहीं है (इंटरनेट या सर्वर से जुड़ाव नहीं हुआ)। थोड़ी देर बाद फिर देखें।</p><div><button class="btn" data-retry>फिर लोड करें</button></div>`;
+    }else{
+      const B=D[b][p],M=D.me&&D.me[b][p];
+      const from=D.periods?(p==='day'?ddmm(D.periods.day):ddmm(D.periods[p])+' से'):'';
+      h+=`<p class="note" style="margin:0">${LBP[p]}${from?' ('+from+')':''} · कुल ${B.total} विद्यार्थी</p>`;
+      if(me)h+=`<p class="lb-me">${M?`<b>आपकी रैंक:</b> <span class="num">${M.rank} / ${M.total}</span> · ${M.score} अंक`:`आपका ${b==='comp'?'कोई प्रतियोगी (पहला) प्रयास':'कोई प्रयास'} ${LBP[p]} दर्ज नहीं है।`}</p>`;
+      if(!B.top.length)h+=`<p style="margin:0">${LBP[p]} अभी कोई प्रविष्टि नहीं। पहले विद्यार्थी बनें!</p>`;
+      else{
+        const meMob=me?'••••••'+String(me).slice(-4):null;
+        h+=`<div class="tbl-wrap"><table class="stbl"><tr><th>रैंक</th><th>नाम</th><th>मोबाइल</th><th>${b==='comp'?'औसत अंक':'सर्वश्रेष्ठ अंक'}</th><th>सटीकता</th><th>समय</th><th>${b==='comp'?'सेट':'प्रयास / सुधार'}</th></tr>
+        ${B.top.map((x,k)=>`<tr${M&&M.rank===k+1&&x.mob===meMob?' class="me"':''}><td>${k+1}</td><td class="nm">${esc(x.name)}</td><td>${esc(x.mob)}</td><td>${x.score}</td><td>${Number(x.acc).toFixed(1)}%</td><td>${Math.round(x.min)} मि</td><td>${b==='comp'?esc(x.set):`${x.tries} / ${x.gain>0?'+'+x.gain:x.gain}`}</td></tr>`).join('')}</table></div>`;
+      }
+      h+=`<p class="note" style="margin:0">पूरा मोबाइल नंबर नहीं दिखाया जाता। हर 1 मिनट में अद्यतन।</p>`;
+    }
+    el.innerHTML=h;
+    el.querySelectorAll('[data-b]').forEach(x=>x.onclick=()=>{LBV.b=x.dataset.b;draw()});
+    el.querySelectorAll('[data-p]').forEach(x=>x.onclick=()=>{LBV.p=x.dataset.p;draw()});
+    const rt=el.querySelector('[data-retry]');if(rt)rt.onclick=()=>renderLB(el,me);
+  };
+  draw();
+}
+renderLB($('#lbReg'),(store.get(LAST)||{}).roll);
 
 /* resume */
 if(SHEET_URL)flushQueue();
