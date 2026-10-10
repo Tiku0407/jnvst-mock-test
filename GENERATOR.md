@@ -1,4 +1,4 @@
-# नया मॉक सेट बनाने की विधि (हर 2 दिन)
+# नया मॉक सेट बनाने की विधि (रोज़ एक नया सेट)
 
 This file is the standing instruction for creating each new JNVST mock test set.
 It is followed by the scheduled task and by anyone adding a set by hand.
@@ -8,7 +8,7 @@ Write all student-facing content in clear, age-appropriate **Hindi** (Class 5 le
 
 1. Read `sets/manifest.js`. Let `last` be the final entry.
 2. Today's date in India (IST, UTC+05:30): `TZ=Asia/Kolkata date +%F`.
-3. If `today < last.live + 2 days`, a new set is **not** due. Stop without any commit.
+3. A new set is due every day. If `today <= last.live` (today's set already exists), it is **not** due. Stop without any commit.
 4. Otherwise create the next set: `SET NN` (two digits, +1 from `last`), file `sets/set-NN.js`, `live` = today.
 
 ## 2. Official pattern (JNVST 2027 prospectus; this wins over anything else)

@@ -260,7 +260,7 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
     <div class="sheet">
       <form id="regForm" novalidate>
         <div class="cover-head"><span class="label">विद्यार्थी पंजीकरण</span><h2>परीक्षा शुरू करने से पहले विवरण भरें</h2></div>
-        <div class="field"><label for="setSel">टेस्ट सेट (हर 2 दिन पर नया)</label><select id="setSel"></select></div>
+        <div class="field"><label for="setSel">टेस्ट सेट (रोज़ नया)</label><select id="setSel"></select></div>
         <div class="field"><label for="sname">विद्यार्थी का नाम <span style="color:var(--bad)">*</span></label><input id="sname" autocomplete="name" maxlength="60" required aria-required="true" placeholder="जैसे: अनन्या साहू"></div>
         <div class="field"><label for="sroll">मोबाइल नंबर <span style="color:var(--bad)">*</span></label><input id="sroll" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" required aria-required="true" pattern="[6-9][0-9]{9}" placeholder="10 अंकों का मोबाइल नंबर"></div>
         <p class="note" style="margin:0"><span style="color:var(--bad)">*</span> दोनों जानकारी भरना अनिवार्य है।</p>
@@ -273,7 +273,7 @@ details.qr summary{font-family:var(--f-display);font-weight:700;cursor:pointer}
         <table id="qrTable"></table>
         <p class="note">पिछले 10 वर्षों (2017–2026) के मूल JNVST प्रश्नपत्र इस प्रोजेक्ट में उपलब्ध नहीं हैं, इसलिए उनसे मिलान नहीं किया गया है। सभी प्रश्न नए लिखे गए हैं, पर "पिछले वर्षों से पूर्णतः भिन्न" होने का सत्यापन तभी संभव है जब वे प्रश्नपत्र जोड़े जाएँ।</p>
       </details>
-      <p class="note">हर सेट का <b>पहला प्रयास</b> (सेट लाइव होने के 2 दिन के भीतर) <b>प्रतियोगी लीडरबोर्ड</b> में गिना जाता है। उसके बाद के सभी प्रयास <b>अभ्यास लीडरबोर्ड</b> में जाते हैं, ताकि दोबारा अभ्यास करने वालों को भी पहचान मिले।</p>
+      <p class="note">हर सेट का <b>पहला प्रयास</b> (सेट लाइव होने वाले दिन ही, रात 12 बजे तक) <b>प्रतियोगी लीडरबोर्ड</b> में गिना जाता है। उसके बाद के सभी प्रयास <b>अभ्यास लीडरबोर्ड</b> में जाते हैं, ताकि दोबारा अभ्यास करने वालों को भी पहचान मिले।</p>
     </div>
   </div>
   <div class="panel lb-wrap" id="lbReg"></div>
@@ -434,7 +434,7 @@ $('#regForm').addEventListener('submit',e=>{
   const now=Date.now();
   try{localStorage.setItem('jnvst_active',JNVST_PICK.file.replace('.js',''))}catch(e){}
   const tried=(store.get(HIST)||[]).some(h=>h.roll===roll&&h.set===SETID);
-  const today=new Date(now+5.5*3600e3).toISOString().slice(0,10),lastDay=SETD.live?new Date(Date.parse(SETD.live)+86400e3).toISOString().slice(0,10):today;
+  const today=new Date(now+5.5*3600e3).toISOString().slice(0,10),lastDay=SETD.live||today;
   if(tried||today>lastDay)setTimeout(()=>toast(tried?'इस सेट का यह आपका दोबारा प्रयास है: यह अभ्यास लीडरबोर्ड में गिना जाएगा।':'इस सेट की प्रतियोगी अवधि समाप्त हो चुकी है: यह प्रयास अभ्यास लीडरबोर्ड में गिना जाएगा।'),400);
   S={name,roll,set:SETID,start:now,end:now+DUR,ans:Array(80).fill(-1),mark:Array(80).fill(false),visit:Array(80).fill(false),tq:Array(80).fill(0),cur:0,bells:0,lastT:now};
   save();enterExam();
@@ -642,7 +642,7 @@ function renderResult(R,fresh){
 }
 
 /* ======================= लीडरबोर्ड (दो अलग रैंकिंग) ======================= */
-const LBT={comp:{n:'प्रतियोगी परीक्षा लीडरबोर्ड',s:'केवल पहला प्रयास',rule:'हर विद्यार्थी का हर सेट पर केवल <b>पहला प्रयास</b> गिना जाता है, और वह भी सेट लाइव होने के <b>2 दिन के भीतर</b> (अगला सेट आने से पहले)। दोबारा दिए गए प्रयास यहाँ नहीं जुड़ते। अवधि में एक से अधिक सेट हों तो उनके पहले प्रयासों का <b>औसत</b> अंक।'},
+const LBT={comp:{n:'प्रतियोगी परीक्षा लीडरबोर्ड',s:'केवल पहला प्रयास',rule:'हर विद्यार्थी का हर सेट पर केवल <b>पहला प्रयास</b> गिना जाता है, और वह भी <b>सेट लाइव होने वाले दिन ही</b> (रात 12 बजे तक, अगला सेट आने से पहले)। दोबारा दिए गए प्रयास यहाँ नहीं जुड़ते। अवधि में एक से अधिक सेट हों तो उनके पहले प्रयासों का <b>औसत</b> अंक।'},
   prac:{n:'अभ्यास लीडरबोर्ड',s:'सभी प्रयास',rule:'हर प्रयास गिना जाता है, किसी भी सेट का, कभी भी। अवधि में आपका <b>सर्वश्रेष्ठ</b> अंक रैंक तय करता है। बार-बार अभ्यास करके सुधार करें: "सुधार" पहले से सर्वश्रेष्ठ प्रयास तक की बढ़त है।'}};
 const LBP={day:'आज',week:'इस सप्ताह',month:'इस माह'};
 const LBV={b:'comp',p:'day'};
