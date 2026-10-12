@@ -11,13 +11,15 @@ Write all student-facing content in clear, age-appropriate **Hindi** (Class 5 le
 3. A new set is due every day. If `today <= last.live` (today's set already exists), it is **not** due. Stop without any commit.
 4. Otherwise create the next set: `SET NN` (two digits, +1 from `last`), file `sets/set-NN.js`, `live` = today.
 
+**Before writing any question, read `PATTERN.md` fully.** It describes how real JNVST questions of each part look (from past papers + the 2027 prospectus) and the required mix per set. Follow it.
+
 ## 2. Official pattern (JNVST 2027 prospectus; this wins over anything else)
 
 80 MCQ · 100 marks · 2 hours · 1.25 marks each · no negative marking · exactly one correct option of four.
 
 | Q | Section | `s` | `g` | Content |
 |---|---|---|---|---|
-| 1–4 | मानसिक योग्यता भाग I | mat | p1 | पैटर्न पूर्ति (अक्षर व संख्या पैटर्न सहित) |
+| 1–4 | मानसिक योग्यता भाग I | mat | p1 | पैटर्न पूर्ति: आकृति का लुप्त भाग, बिना दिशा बदले (≥3 आकृति; अधिकतम 1 अक्षर/संख्या ग्रिड) |
 | 5–8 | भाग II | mat | p2 | आकृति श्रृंखला पूर्ति |
 | 9–11 | भाग III | mat | p3 | ज्यामितीय आकृति पूर्ति (त्रिभुज, वर्ग, वृत्त) |
 | 12–16 | भाग IV | mat | p4 | दर्पण एवं जल प्रतिबिंब |
@@ -62,7 +64,7 @@ Removed topics, never use: ऑड वन आउट, समान आकृति
 4. Verify every arithmetic answer by computing it (run a quick `node -e` check). Verify every fact; if unsure of a fact, choose a different question.
 5. Distractors plausible but unambiguously wrong. No "all of the above".
 6. Every question has a short Hindi explanation `e` and a topic tag `t`.
-7. Mental-ability questions must be figure-based or letter/number patterns, drawn with the helpers in `figs.js` (`svg, one, seq, arr, dots, poly, q7, solid, piece, rect, SQ, tri3, clock, W, MV, MH, F`). Check each figure question by reasoning about the exact coordinates: the correct option must be the only one that fits, at the same size and orientation. Set `fo:1` when options are figures/words to be shown in a grid. Prefer new figure ideas over re-drawing SET 01's.
+7. Mental-ability questions must be figure-based or letter/number patterns, drawn with the helpers in `figs.js` (`svg, one, seq, arr, dots, poly, q7, solid, piece, rect, SQ, tri3, clock, W, MV, MH, F`). Check each figure question by reasoning about the exact coordinates: the correct option must be the only one that fits, at the same size and orientation. Set `fo:1` when options are figures/words to be shown in a grid. Use the design ideas, mixes and drawing methods in `PATTERN.md`; prefer a new figure idea each set over re-drawing an earlier set's.
 
 ## 5. File format (`sets/set-NN.js`)
 
