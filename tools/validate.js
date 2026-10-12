@@ -64,7 +64,10 @@ for (const m of manifest) {
     if (evsPass !== 5) errors.push(`${tag}: EVS में 15 MCQ + 1 गद्यांश (5 प्रश्न) चाहिए, गद्यांश-प्रश्न ${evsPass}`);
     const lanP = Object.entries(passUse).filter(([k]) => (Q || []).slice(60).some(q => q.p === k));
     if (lanP.length !== 4 || lanP.some(([, c]) => c !== 5)) errors.push(`${tag}: भाषा में 4 गद्यांश × 5 प्रश्न चाहिए`);
-    if (diff.E !== 24 || diff.M !== 40 || diff.D !== 16) warnings.push(`${tag}: कठिनाई ${diff.E}/${diff.M}/${diff.D} (लक्ष्य 24/40/16)`);
+    // कठिनाई धीरे-धीरे बढ़ती है (GENERATOR.md देखें): सेट-क्रमांक के अनुसार लक्ष्य
+    const sn = parseInt(String(m.id).replace(/\D/g, ''), 10);
+    const tgt = sn <= 4 ? [24, 40, 16] : sn <= 7 ? [22, 40, 18] : sn <= 14 ? [20, 40, 20] : sn <= 21 ? [18, 40, 22] : sn <= 30 ? [16, 40, 24] : [14, 40, 26];
+    if (diff.E !== tgt[0] || diff.M !== tgt[1] || diff.D !== tgt[2]) warnings.push(`${tag}: कठिनाई ${diff.E}/${diff.M}/${diff.D} (लक्ष्य ${tgt.join('/')})`);
     if (Object.values(dist).some(v => v < 12 || v > 28)) warnings.push(`${tag}: सही उत्तर असंतुलित A${dist.A} B${dist.B} C${dist.C} D${dist.D}`);
     console.log(`${tag}: ${Q.length} प्रश्न · कठिनाई ${diff.E}/${diff.M}/${diff.D} · उत्तर A${dist.A} B${dist.B} C${dist.C} D${dist.D}`);
   }

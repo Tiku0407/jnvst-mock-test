@@ -42,7 +42,22 @@ Removed topics, never use: ऑड वन आउट, समान आकृति
 ## 4. Quality rules
 
 1. Every question original. Never copy a JNVST previous-year question; never re-use a question from any earlier set, even with changed numbers, names or option order. The same concept in a genuinely new form is fine.
-2. Difficulty exactly **24 E / 40 M / 16 D** (`d:'E'|'M'|'D'`).
+2. Difficulty rises slowly, set by set (`d:'E'|'M'|'D'`). Use the exact E / M / D counts for the set number:
+
+   | Set | E | M | D |
+   |---|---|---|---|
+   | SET 01–04 | 24 | 40 | 16 |
+   | SET 05–07 | 22 | 40 | 18 |
+   | SET 08–14 | 20 | 40 | 20 |
+   | SET 15–21 | 18 | 40 | 22 |
+   | SET 22–30 | 16 | 40 | 24 |
+   | SET 31 onward | 14 | 40 | 26 (ceiling; stays here) |
+
+   Spread the extra D questions across all four sections. Also raise the level *within* each label from set to set, while staying inside the Class 5 syllabus (section 3):
+   - **मानसिक योग्यता:** more series with two changes at once (position + count, rotation + shading); mirror/water images of mixed letters and digits; clock mirrors with odd minutes; hidden figures where the distractors differ by only one line.
+   - **अंकगणित:** more 2–3 step word problems (e.g. unit conversion + operation, HCF/LCM with remainders, area minus a part, time across midnight); distractors from common mistakes.
+   - **EVS:** fewer one-word recall questions, more "why/what happens if" reasoning and applied situations.
+   - **भाषा:** slightly longer passages; more inference, central idea, title, and "which statement is NOT correct" questions; answers still findable in the passage.
 3. Correct answers balanced across A/B/C/D (roughly 17–23 each).
 4. Verify every arithmetic answer by computing it (run a quick `node -e` check). Verify every fact; if unsure of a fact, choose a different question.
 5. Distractors plausible but unambiguously wrong. No "all of the above".
