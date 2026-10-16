@@ -7,5 +7,6 @@ window.JNVST_SETS=[
   {id:'SET 04',file:'set-04.js',live:'2026-10-12'},
   {id:'SET 05',file:'set-05.js',live:'2026-10-13'},
   {id:'SET 06',file:'set-06.js',live:'2026-10-14'},
-  {id:'SET 07',file:'set-07.js',live:'2026-10-15'}
+  {id:'SET 07',file:'set-07.js',live:'2026-10-15'},
+  {id:'SET 08',file:'set-08.js',live:'2026-10-16'}
 ];
