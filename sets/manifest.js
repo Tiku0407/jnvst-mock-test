@@ -32,5 +32,6 @@ window.JNVST_SETS=[
   {id:'SET 29',file:'set-29.js',live:'2026-11-09'},
   {id:'SET 30',file:'set-30.js',live:'2026-11-10'},
   {id:'SET 31',file:'set-31.js',live:'2026-11-11'},
-  {id:'SET 32',file:'set-32.js',live:'2026-11-12'}
+  {id:'SET 32',file:'set-32.js',live:'2026-11-12'},
+  {id:'SET 33',file:'set-33.js',live:'2026-11-13'}
 ];
